@@ -6,6 +6,12 @@
 ############################
 
 #
+# Picard tool - change this path if necessary
+#
+picard="java -jar ~/bin/picard.jar"
+
+
+#
 # Usage information
 #
 usage()
@@ -29,6 +35,7 @@ then
 	exit 1
 fi
 
+
 #
 # Get user input
 #
@@ -41,7 +48,7 @@ bowtie2-build $prefix.fa $prefix &
 
 samtools faidx $prefix.fa &
 
-java -jar ~/bin/picard.jar CreateSequenceDictionary REFERENCE=$prefix.fa OUTPUT=$prefix.dict &
+$picard CreateSequenceDictionary REFERENCE=$prefix.fa OUTPUT=$prefix.dict &
 
 bwa index $prefix.fa &
 

@@ -1,5 +1,6 @@
 #bioPipelines
-General shell scripts to run often-used pipelines.
+Personal shell scripts to run general and often-used pipelines.
+In all cases, it might be necessary to adjust variables with paths to GATK and Picard Tools.
 
 ###index_reference.sh
 Indexes a reference genome with `bowtie2-build`, `samtools faidx`, `CreateSequenceDictionary` from Picard Tools and `bwa index`.

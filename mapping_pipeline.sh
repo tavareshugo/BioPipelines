@@ -9,6 +9,12 @@
 # bash mapping_pipeline.sh -o testoutdir -p testprefix -1 read1 -2 read2 -i testid -l testlibrary -b testbarcode -s testsample -r testref -c 6
 
 #
+# Picard and GATK paths - change the paths if necessary
+#
+picard="java -jar ~/bin/picard.jar"
+gatk="java -jar ~/bin/GenomeAnalysisTK.jar"
+
+#
 # Set user arguments
 #
 # Usage message
@@ -88,7 +94,7 @@ samtools sort -T $outdir/samtools_tempfiles \
 #
 # reorder reads to have same order as the reference
 #
-java -jar ~/bin/picard.jar ReorderSam \
+$picard ReorderSam \
 INPUT=$outdir/temp1_$outprefix.bwt2.bam \
 OUTPUT=$outdir/temp2_$outprefix.bwt2.reorder.bam \
 REFERENCE=$ref.fa \
@@ -101,7 +107,7 @@ VERBOSITY=ERROR;
 #
 # remove duplicates with Picard MarkDuplicates
 #
-java -jar ~/bin/picard.jar MarkDuplicates \
+$picard MarkDuplicates \
 INPUT=$outdir/temp2_$outprefix.bwt2.reorder.bam \
 OUTPUT=$outdir/temp3_$outprefix.bwt2.reorder.markdup.bam \
 METRICS_FILE=$outdir/stats/$outprefix.bwt2.reorder.markdup_metrics \
@@ -115,13 +121,13 @@ CREATE_INDEX=true
 # Realign around indels
 #
 # Create target realigner
-java -jar ~/bin/GenomeAnalysisTK.jar -T RealignerTargetCreator \
+$gatk -T RealignerTargetCreator \
 -nt $threads -R $ref.fa \
 -o $outdir/temp3_$outprefix.bwt2.reorder.markdup.intervals \
 -I $outdir/temp3_$outprefix.bwt2.reorder.markdup.bam
 
 # Realign
-java -jar ~/bin/GenomeAnalysisTK.jar -T IndelRealigner \
+$gatk -T IndelRealigner \
 -R $ref.fa \
 --baq CALCULATE_AS_NECESSARY \
 -I $outdir/temp3_$outprefix.bwt2.reorder.markdup.bam \
@@ -136,7 +142,7 @@ java -jar ~/bin/GenomeAnalysisTK.jar -T IndelRealigner \
 #
 # collect insert size distribution
 #
-java -jar ~/bin/picard.jar CollectInsertSizeMetrics \
+$picard CollectInsertSizeMetrics \
 INPUT=$outdir/$outprefix.bwt2.reorder.markdup.rlgn.bam \
 OUTPUT=$outdir/stats/$outprefix.bwt2.reorder.markdup.rlgn.insert_size.hist \
 HISTOGRAM_FILE=$outdir/stats/$outprefix.bwt2.reorder.markdup.rlgn.insert_size.pdf \
@@ -152,7 +158,7 @@ samtools flagstat $outdir/$outprefix.bwt2.reorder.markdup.rlgn.bam > $outdir/sta
 #
 # gatk callable sites stats
 #
-java -jar ~/bin/GenomeAnalysisTK.jar -T CallableLoci \
+$gatk -T CallableLoci \
 -I $outdir/$outprefix.bwt2.reorder.markdup.rlgn.bam \
 -R $ref.fa \
 --summary $outdir/stats/$outprefix.bwt2.reorder.markdup.rlgn.callable.summary \
@@ -161,6 +167,5 @@ java -jar ~/bin/GenomeAnalysisTK.jar -T CallableLoci \
 --minDepth 10 &
 
 wait
-
 
 
