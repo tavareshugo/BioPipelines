@@ -12,7 +12,7 @@
 # Picard and GATK paths - change the paths if necessary
 #
 picard="java -jar ~/bin/picard.jar"
-gatk="java -jar ~/bin/GenomeAnalysisTK.jar"
+gatk="java -jar ~/bin/gatk.jar"
 
 #
 # Set user arguments
@@ -29,6 +29,7 @@ It also outputs several basic statistics for the final alignment.
 
 OPTIONS:
   -h      Show this message
+  -m      Mapping software to use. Choose between 'bwa' (default) or 'bowtie2'.
   -o      output directory
   -p      prefix for output files
   -1      path to read 1 fastq file
@@ -37,17 +38,22 @@ OPTIONS:
   -l      library name
   -b      library barcode (usually can be obtained from fastq header)
   -s      custom sample name
-  -r      path to indexed reference genome (without file extension)
-  -c      number of processing cores to use      
+  -r      path to indexed reference genome (including file extension)
+  -x      extra options passed to the mapper. This excludes read inputs,
+          reference fasta, number of threads to use and read group info.
+  -c      number of processing cores to use
+  -k      keep intermediate .bam files (these have a temp*_ prefix). 
+          Choose between 'yes' or 'no' (default).
 
 EOF
 }
 
 # Get options
-while getopts “ho:p:1:2:i:l:b:s:r:c:” OPTION
+while getopts “hm:o:p:1:2:i:l:b:s:r:x:c:k:” OPTION
 do
   case $OPTION in
     h)  usage; exit 1;;
+    m)  mapper=$OPTARG;;
     o)  outdir=$OPTARG;;
     p)  outprefix=$OPTARG;;
     1)  read1=$OPTARG;;
@@ -57,12 +63,18 @@ do
     b)  pu=$OPTARG;;
     s)  sm=$OPTARG;;
     r)  ref=$OPTARG;;
+    x)  extraopts=$OPTARG;;
     c)  threads=$OPTARG;;
+    k)  keep=$OPTARG;;
     ?)  usage; exit;;
   esac
 done
 
-# Check that all options were passed
+
+#
+# Check options
+#
+# Check that all required options were passed
 if [[ -z $outdir ]] || [[ -z $outprefix ]] || [[ -z $read1 ]] || [[ -z $id ]] || [[ -z $lb ]] || [[ -z $pu ]] || [[ -z $sm ]] || [[ -z $ref ]] || [[ -z $threads ]]
 then
   printf "\n=========================\n ERROR: missing options\n=========================\n\n"
@@ -70,43 +82,89 @@ then
   exit 1
 fi
 
+# Define bowtie2 as the default mapper
+if [[ $mapper = "" ]]
+then
+	mapper="bwa"
+fi
+
+if [[ $mapper != "bowtie2" ]] && [[ $mapper != "bwa" ]]
+then
+	printf "\nMapper has to be 'bowtie2' or 'bwa'\n" 1>&2
+	exit 1
+fi
+
+# Define default removal of temp files
+if [[ $keep = "" ]]
+then
+	keep="no"
+fi
+
 
 #
 # Make output directory
 #
+echo "Mapping pipeline outputs are in: $outdir" 1>&2
 mkdir -p $outdir/stats
-
 
 
 #
 # mapping with bowtie2 and coordinate sorting
 #
-bowtie2 -N 1 -p $threads \
--x $ref \
--1 $read1 -2 $read2 \
---rg-id $id \
---rg SM:$sm --rg PL:illumina --rg LB:$lb --rg PU:$pu \
-|
-samtools sort -T $outdir/samtools_tempfiles \
--o $outdir/temp1_$outprefix.bwt2.bam -;
+# Using bowtie2
+if [[ $mapper = "bowtie2" ]]
+then
+	echo "Using $mapper for mapping." 1>&2
+	bwt2ref=`echo $ref | sed 's/\.[^\.]*$//'`
+	
+	bowtie2 -p $threads \
+	-x $bwt2ref \
+	-1 $read1 -2 $read2 \
+	--rg-id $id \
+	--rg SM:$sm --rg PL:illumina --rg LB:$lb --rg PU:$pu \
+	$extraopts \
+	| \
+	samtools sort -T $outdir/samtools_tempfiles \
+	-o $outdir/temp1_$outprefix.bwt2.bam -;
+fi
+
+# Using bwa
+if [[ $mapper = "bwa" ]]
+then
+	echo "Using $mapper for mapping." 1>&2
+	
+	bwa mem -M -t $threads \
+	-R "@RG\tID:$id\tSM:$sm\tPL:illumina\tLB:$lb\tPU:$pu" \
+	$extraopts \
+	$ref $read1 $read2 \
+	| \
+	samtools sort -T $outdir/samtools_tempfiles \
+	-o $outdir/temp1_$outprefix.bwt2.bam -;
+fi
 
 
 #
 # reorder reads to have same order as the reference
 #
+echo "Reordering reads to match reference genome" 1>&2
 $picard ReorderSam \
 INPUT=$outdir/temp1_$outprefix.bwt2.bam \
 OUTPUT=$outdir/temp2_$outprefix.bwt2.reorder.bam \
-REFERENCE=$ref.fa \
+REFERENCE=$ref \
 QUIET=true \
-VERBOSITY=ERROR;
+VERBOSITY=ERROR \
+CREATE_INDEX=true;
 
-#rm $outdir/temp1*;
+if [[ $keep = "no" ]]
+then
+	rm $outdir/temp1*;
+fi
 
 
 #
-# remove duplicates with Picard MarkDuplicates
+# Mark duplicates with Picard
 #
+echo "Marking duplicates"  1>&2
 $picard MarkDuplicates \
 INPUT=$outdir/temp2_$outprefix.bwt2.reorder.bam \
 OUTPUT=$outdir/temp3_$outprefix.bwt2.reorder.markdup.bam \
@@ -114,58 +172,73 @@ METRICS_FILE=$outdir/stats/$outprefix.bwt2.reorder.markdup_metrics \
 MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=1000 \
 CREATE_INDEX=true
 
-#rm $outdir/temp2*;
+if [[ $keep = "no" ]]
+then
+	rm $outdir/temp2*;
+fi
 
 
 #
 # Realign around indels
 #
+echo "Realigning around indels"  1>&2
+
 # Create target realigner
 $gatk -T RealignerTargetCreator \
--nt $threads -R $ref.fa \
+-nt $threads -R $ref \
 -o $outdir/temp3_$outprefix.bwt2.reorder.markdup.intervals \
 -I $outdir/temp3_$outprefix.bwt2.reorder.markdup.bam
 
 # Realign
 $gatk -T IndelRealigner \
--R $ref.fa \
+-R $ref \
 --baq CALCULATE_AS_NECESSARY \
 -I $outdir/temp3_$outprefix.bwt2.reorder.markdup.bam \
 -o $outdir/$outprefix.bwt2.reorder.markdup.rlgn.bam \
 -targetIntervals $outdir/temp3_$outprefix.bwt2.reorder.markdup.intervals \
 -noTags
 
-#rm $outdir/temp3*
+if [[ $keep = "no" ]]
+then
+	rm $outdir/temp3*
+fi
 
 
 ##### Collect statistics #####
 #
 # collect insert size distribution
 #
+echo "Getting insert size distribution" 1>&2
+
 $picard CollectInsertSizeMetrics \
 INPUT=$outdir/$outprefix.bwt2.reorder.markdup.rlgn.bam \
 OUTPUT=$outdir/stats/$outprefix.bwt2.reorder.markdup.rlgn.insert_size.hist \
 HISTOGRAM_FILE=$outdir/stats/$outprefix.bwt2.reorder.markdup.rlgn.insert_size.pdf \
-REFERENCE_SEQUENCE=$ref.fa &
+REFERENCE_SEQUENCE=$ref &
 
 
 #
 # samtools basic stats
 #
+echo "General mapping statistics (flagstat)" 1>&2
+
 samtools flagstat $outdir/$outprefix.bwt2.reorder.markdup.rlgn.bam > $outdir/stats/$outprefix.bwt2.reorder.markdup.rlgn.flagstat &
 
 
 #
 # gatk callable sites stats
 #
+echo "Getting sites with depth > 10" 1>&2
+
 $gatk -T CallableLoci \
 -I $outdir/$outprefix.bwt2.reorder.markdup.rlgn.bam \
--R $ref.fa \
+-R $ref \
 --summary $outdir/stats/$outprefix.bwt2.reorder.markdup.rlgn.callable.summary \
 -o $outdir/stats/$outprefix.bwt2.reorder.markdup.rlgn.callable.bed \
 --format BED \
 --minDepth 10 &
 
 wait
+
 
 
