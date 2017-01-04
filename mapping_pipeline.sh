@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ###########
-# Mapping pipeline using bowtie2
+# Mapping pipeline script
 # Hugo Jul 2015
 ###########
 
@@ -23,7 +23,7 @@ usage()
 cat << EOF
 usage: $0 <options>
 
-This script runs a mapping pipeline using bowtie2 (mapping), 
+This script runs a mapping pipeline using either bowtie2 or bwa (mapping), 
 Picard tools (reorder and markdup) and GATK (realign around indels).
 It also outputs several basic statistics for the final alignment.
 
@@ -157,7 +157,7 @@ CREATE_INDEX=true;
 
 if [[ $keep = "no" ]]
 then
-	rm $outdir/temp1*;
+	rm $outdir/temp1*.bam;
 fi
 
 
@@ -174,7 +174,7 @@ CREATE_INDEX=true
 
 if [[ $keep = "no" ]]
 then
-	rm $outdir/temp2*;
+	rm $outdir/temp2*.bam;
 fi
 
 
@@ -200,7 +200,7 @@ $gatk -T IndelRealigner \
 
 if [[ $keep = "no" ]]
 then
-	rm $outdir/temp3*
+	rm $outdir/temp3*.bam
 fi
 
 
