@@ -172,7 +172,7 @@ fi
 #
 # Mark duplicates with Picard
 #
-if [[ $dups = "" ]]
+if [[ $dups = "yes" ]]
 then
 	echo "Marking duplicates"  1>&2
 	java -jar $picard MarkDuplicates \
