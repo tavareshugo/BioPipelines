@@ -28,20 +28,21 @@ Picard tools (reorder and markdup) and GATK (realign around indels).
 It also outputs several basic statistics for the final alignment.
 
 OPTIONS:
-  -h      Show this message
+  -h      Show this message.
   -m      Mapping software to use. Choose between 'bwa' (default) or 'bowtie2'.
-  -o      output directory
-  -p      prefix for output files
-  -1      path to read 1 fastq file
-  -2      path to read 2 fastq file
-  -i      sample ID (usually take the ID from fastq file header)
-  -l      library name
-  -b      library barcode (usually can be obtained from fastq header)
-  -s      custom sample name
-  -r      path to indexed reference genome (including file extension)
+  -o      output directory.
+  -p      prefix for output files.
+  -1      path to read 1 fastq file.
+  -2      path to read 2 fastq file.
+  -i      sample ID (usually take the ID from fastq file header).
+  -l      library name.
+  -b      library barcode (usually can be obtained from fastq header).
+  -s      custom sample name.
+  -r      path to indexed reference genome (including file extension).
   -x      extra options passed to the mapper. This excludes read inputs,
           reference fasta, number of threads to use and read group info.
-  -c      number of processing cores to use
+  -c      number of processing cores to use.
+  -d      mark duplicates. Choose between 'yes' (default) or 'no'.
   -k      keep intermediate .bam files (these have a temp*_ prefix). 
           Choose between 'yes' or 'no' (default).
 
@@ -65,6 +66,7 @@ do
     r)  ref=$OPTARG;;
     x)  extraopts=$OPTARG;;
     c)  threads=$OPTARG;;
+    d)  dups=$OPTARG;;
     k)  keep=$OPTARG;;
     ?)  usage; exit;;
   esac
@@ -98,6 +100,12 @@ fi
 if [[ $keep = "" ]]
 then
 	keep="no"
+fi
+
+# Define default marking of duplicates
+if [[ $dups = "" ]]
+then
+	dups="yes"
 fi
 
 
@@ -144,7 +152,7 @@ fi
 
 
 #
-# reorder reads to have same order as the reference
+# reorder reads to have the same order as the reference
 #
 echo "Reordering reads to match reference genome" 1>&2
 java -jar $picard ReorderSam \
@@ -164,13 +172,23 @@ fi
 #
 # Mark duplicates with Picard
 #
-echo "Marking duplicates"  1>&2
-java -jar $picard MarkDuplicates \
-INPUT=$outdir/temp2_$outprefix.bwt2.reorder.bam \
-OUTPUT=$outdir/temp3_$outprefix.bwt2.reorder.markdup.bam \
-METRICS_FILE=$outdir/stats/$outprefix.bwt2.reorder.markdup_metrics \
-MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=1000 \
-CREATE_INDEX=true
+if [[ $dups = "" ]]
+then
+	echo "Marking duplicates"  1>&2
+	java -jar $picard MarkDuplicates \
+	INPUT=$outdir/temp2_$outprefix.bwt2.reorder.bam \
+	OUTPUT=$outdir/temp3_$outprefix.bwt2.reorder.markdup.bam \
+	METRICS_FILE=$outdir/stats/$outprefix.bwt2.reorder.markdup_metrics \
+	MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=1000 \
+	CREATE_INDEX=true
+elif [[ $dups = "no" ]]
+then
+	echo "Skipping marking of duplicates"  1>&2
+	
+	# If duplicates are not to be removed, change the file name to proceed
+	# with the rest of the pipeline
+	mv $outdir/temp2_$outprefix.bwt2.reorder.bam $outdir/temp3_$outprefix.bwt2.reorder.markdup.bam
+fi
 
 if [[ $keep = "no" ]]
 then
