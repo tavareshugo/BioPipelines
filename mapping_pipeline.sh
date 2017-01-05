@@ -50,7 +50,7 @@ EOF
 }
 
 # Get options
-while getopts “hm:o:p:1:2:i:l:b:s:r:x:c:k:” OPTION
+while getopts “hm:o:p:1:2:i:l:b:s:r:x:c:d:k:” OPTION
 do
   case $OPTION in
     h)  usage; exit 1;;
