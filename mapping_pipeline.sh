@@ -11,8 +11,8 @@
 #
 # Picard and GATK paths - change the paths if necessary
 #
-picard="java -jar ~/bin/picard.jar"
-gatk="java -jar ~/bin/gatk.jar"
+picard="$HOME/bin/picard.jar"
+gatk="$HOME/bin/gatk.jar"
 
 #
 # Set user arguments
@@ -147,7 +147,7 @@ fi
 # reorder reads to have same order as the reference
 #
 echo "Reordering reads to match reference genome" 1>&2
-$picard ReorderSam \
+java -jar $picard ReorderSam \
 INPUT=$outdir/temp1_$outprefix.bwt2.bam \
 OUTPUT=$outdir/temp2_$outprefix.bwt2.reorder.bam \
 REFERENCE=$ref \
@@ -165,7 +165,7 @@ fi
 # Mark duplicates with Picard
 #
 echo "Marking duplicates"  1>&2
-$picard MarkDuplicates \
+java -jar $picard MarkDuplicates \
 INPUT=$outdir/temp2_$outprefix.bwt2.reorder.bam \
 OUTPUT=$outdir/temp3_$outprefix.bwt2.reorder.markdup.bam \
 METRICS_FILE=$outdir/stats/$outprefix.bwt2.reorder.markdup_metrics \
@@ -184,13 +184,13 @@ fi
 echo "Realigning around indels"  1>&2
 
 # Create target realigner
-$gatk -T RealignerTargetCreator \
+java -jar $gatk -T RealignerTargetCreator \
 -nt $threads -R $ref \
 -o $outdir/temp3_$outprefix.bwt2.reorder.markdup.intervals \
 -I $outdir/temp3_$outprefix.bwt2.reorder.markdup.bam
 
 # Realign
-$gatk -T IndelRealigner \
+java -jar $gatk -T IndelRealigner \
 -R $ref \
 --baq CALCULATE_AS_NECESSARY \
 -I $outdir/temp3_$outprefix.bwt2.reorder.markdup.bam \
@@ -210,7 +210,7 @@ fi
 #
 echo "Getting insert size distribution" 1>&2
 
-$picard CollectInsertSizeMetrics \
+java -jar $picard CollectInsertSizeMetrics \
 INPUT=$outdir/$outprefix.bwt2.reorder.markdup.rlgn.bam \
 OUTPUT=$outdir/stats/$outprefix.bwt2.reorder.markdup.rlgn.insert_size.hist \
 HISTOGRAM_FILE=$outdir/stats/$outprefix.bwt2.reorder.markdup.rlgn.insert_size.pdf \
@@ -230,7 +230,7 @@ samtools flagstat $outdir/$outprefix.bwt2.reorder.markdup.rlgn.bam > $outdir/sta
 #
 echo "Getting sites with depth > 10" 1>&2
 
-$gatk -T CallableLoci \
+java -jar $gatk -T CallableLoci \
 -I $outdir/$outprefix.bwt2.reorder.markdup.rlgn.bam \
 -R $ref \
 --summary $outdir/stats/$outprefix.bwt2.reorder.markdup.rlgn.callable.summary \
