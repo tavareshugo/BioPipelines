@@ -165,7 +165,7 @@ CREATE_INDEX=true;
 
 if [[ $keep = "no" ]]
 then
-	rm $outdir/temp1*.bam;
+	rm $outdir/temp1*.ba*;
 fi
 
 
@@ -192,7 +192,7 @@ fi
 
 if [[ $keep = "no" ]]
 then
-	rm $outdir/temp2*.bam;
+	rm $outdir/temp2*.ba*;
 fi
 
 
@@ -218,7 +218,7 @@ java -jar $gatk -T IndelRealigner \
 
 if [[ $keep = "no" ]]
 then
-	rm $outdir/temp3*.bam
+	rm $outdir/temp3*.ba*
 fi
 
 
