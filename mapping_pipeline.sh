@@ -123,6 +123,7 @@ if [[ $dups == "yes" ]]
 then
 	output="$outprefix.$mapper.sort.reorder.markdup.rlgn"
 elif [[ $dups == "no" ]]
+then
 	output="$outprefix.$mapper.sort.reorder.rlgn"
 fi
 
