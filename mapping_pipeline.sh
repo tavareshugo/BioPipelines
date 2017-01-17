@@ -117,6 +117,17 @@ mkdir -p $outdir/stats
 
 
 #
+# Define filename of output
+#
+if [[ $dups == "yes" ]]
+then
+	output="$outprefix.$mapper.sort.reorder.markdup.rlgn"
+elif [[ $dups == "no" ]]
+	output="$outprefix.$mapper.sort.reorder.rlgn"
+fi
+
+
+#
 # mapping with bowtie2 and coordinate sorting
 #
 # Using bowtie2
@@ -133,7 +144,7 @@ then
 	$extraopts \
 	| \
 	samtools sort -T $outdir/samtools_tempfiles \
-	-o $outdir/temp1_$outprefix.bwt2.bam -;
+	-o $outdir/temp1_$outprefix.$mapper.sort.bam -;
 fi
 
 # Using bwa
@@ -147,7 +158,7 @@ then
 	$ref $read1 $read2 \
 	| \
 	samtools sort -T $outdir/samtools_tempfiles \
-	-o $outdir/temp1_$outprefix.bwt2.bam -;
+	-o $outdir/temp1_$outprefix.$mapper.sort.bam -;
 fi
 
 
@@ -156,8 +167,8 @@ fi
 #
 echo "Reordering reads to match reference genome" 1>&2
 java -jar $picard ReorderSam \
-INPUT=$outdir/temp1_$outprefix.bwt2.bam \
-OUTPUT=$outdir/temp2_$outprefix.bwt2.reorder.bam \
+INPUT=$outdir/temp1_$outprefix.$mapper.sort.bam \
+OUTPUT=$outdir/temp2_$outprefix.$mapper.sort.reorder.bam \
 REFERENCE=$ref \
 QUIET=true \
 VERBOSITY=ERROR \
@@ -170,24 +181,21 @@ fi
 
 
 #
-# Mark duplicates with Picard
+# Mark duplicates with Picard and create Indel targets
 #
 if [[ $dups = "yes" ]]
 then
 	echo "Marking duplicates"  1>&2
 	java -jar $picard MarkDuplicates \
-	INPUT=$outdir/temp2_$outprefix.bwt2.reorder.bam \
-	OUTPUT=$outdir/temp3_$outprefix.bwt2.reorder.markdup.bam \
+	INPUT=$outdir/temp2_$outprefix.$mapper.sort.reorder.bam \
+	OUTPUT=$outdir/temp3_$outprefix.$mapper.sort.reorder.markdup.bam \
 	METRICS_FILE=$outdir/stats/$outprefix.bwt2.reorder.markdup_metrics \
 	MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=1000 \
 	CREATE_INDEX=true
+	
 elif [[ $dups = "no" ]]
 then
 	echo "Skipping marking of duplicates"  1>&2
-	
-	# If duplicates are not to be removed, change the file name to proceed
-	# with the rest of the pipeline
-	mv $outdir/temp2_$outprefix.bwt2.reorder.bam $outdir/temp3_$outprefix.bwt2.reorder.markdup.bam
 fi
 
 if [[ $keep = "no" ]]
@@ -201,20 +209,40 @@ fi
 #
 echo "Realigning around indels"  1>&2
 
-# Create target realigner
-java -jar $gatk -T RealignerTargetCreator \
--nt $threads -R $ref \
--o $outdir/temp3_$outprefix.bwt2.reorder.markdup.intervals \
--I $outdir/temp3_$outprefix.bwt2.reorder.markdup.bam
+if [[ $dups = "yes" ]]
+then
+	echo "Creating targets around Indels" 1>&2
+	java -jar $gatk -T RealignerTargetCreator \
+	-nt $threads -R $ref \
+	-o $outdir/${output}.intervals \
+	-I $$outdir/temp3_$outprefix.$mapper.sort.reorder.markdup.bam
 
-# Realign
-java -jar $gatk -T IndelRealigner \
--R $ref \
---baq CALCULATE_AS_NECESSARY \
--I $outdir/temp3_$outprefix.bwt2.reorder.markdup.bam \
--o $outdir/$outprefix.bwt2.reorder.markdup.rlgn.bam \
--targetIntervals $outdir/temp3_$outprefix.bwt2.reorder.markdup.intervals \
--noTags
+	# Realign
+	java -jar $gatk -T IndelRealigner \
+	-R $ref \
+	--baq CALCULATE_AS_NECESSARY \
+	-I $outdir/temp3_$outprefix.$mapper.sort.reorder.markdup.bam \
+	-o $outdir/${output}.bam \
+	-targetIntervals $outdir/${output}.intervals \
+	-noTags
+
+elif [[ $dups = "no" ]]
+then
+	echo "Creating targets around Indels" 1>&2
+	java -jar $gatk -T RealignerTargetCreator \
+	-nt $threads -R $ref \
+	-o $outdir/${output}.intervals \
+	-I $$outdir/temp2_$outprefix.$mapper.sort.reorder.bam
+	
+	# Realign
+	java -jar $gatk -T IndelRealigner \
+	-R $ref \
+	--baq CALCULATE_AS_NECESSARY \
+	-I $outdir/temp2_$outprefix.$mapper.sort.reorder.bam \
+	-o $outdir/${output}.bam \
+	-targetIntervals $outdir/${output}.intervals \
+	-noTags
+fi
 
 if [[ $keep = "no" ]]
 then
@@ -229,9 +257,9 @@ fi
 echo "Getting insert size distribution" 1>&2
 
 java -jar $picard CollectInsertSizeMetrics \
-INPUT=$outdir/$outprefix.bwt2.reorder.markdup.rlgn.bam \
-OUTPUT=$outdir/stats/$outprefix.bwt2.reorder.markdup.rlgn.insert_size.hist \
-HISTOGRAM_FILE=$outdir/stats/$outprefix.bwt2.reorder.markdup.rlgn.insert_size.pdf \
+INPUT=$outdir/${output}.bam \
+OUTPUT=$outdir/stats/${output}.insert_size.hist \
+HISTOGRAM_FILE=$outdir/stats/${output}.insert_size.pdf \
 REFERENCE_SEQUENCE=$ref &
 
 
@@ -240,7 +268,7 @@ REFERENCE_SEQUENCE=$ref &
 #
 echo "General mapping statistics (flagstat)" 1>&2
 
-samtools flagstat $outdir/$outprefix.bwt2.reorder.markdup.rlgn.bam > $outdir/stats/$outprefix.bwt2.reorder.markdup.rlgn.flagstat &
+samtools flagstat $outdir/${output}.bam > $outdir/stats/${output}.flagstat &
 
 
 #
@@ -249,10 +277,10 @@ samtools flagstat $outdir/$outprefix.bwt2.reorder.markdup.rlgn.bam > $outdir/sta
 echo "Getting sites with depth > 10" 1>&2
 
 java -jar $gatk -T CallableLoci \
--I $outdir/$outprefix.bwt2.reorder.markdup.rlgn.bam \
+-I $outdir/${output}.bam \
 -R $ref \
---summary $outdir/stats/$outprefix.bwt2.reorder.markdup.rlgn.callable.summary \
--o $outdir/stats/$outprefix.bwt2.reorder.markdup.rlgn.callable.bed \
+--summary $outdir/stats/${output}.callable.summary \
+-o $outdir/stats/${output}.callable.bed \
 --format BED \
 --minDepth 10 &
 
