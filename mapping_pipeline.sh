@@ -216,7 +216,7 @@ then
 	java -jar $gatk -T RealignerTargetCreator \
 	-nt $threads -R $ref \
 	-o $outdir/${output}.intervals \
-	-I $$outdir/temp3_$outprefix.$mapper.sort.reorder.markdup.bam
+	-I $outdir/temp3_$outprefix.$mapper.sort.reorder.markdup.bam
 
 	# Realign
 	java -jar $gatk -T IndelRealigner \
@@ -233,7 +233,7 @@ then
 	java -jar $gatk -T RealignerTargetCreator \
 	-nt $threads -R $ref \
 	-o $outdir/${output}.intervals \
-	-I $$outdir/temp2_$outprefix.$mapper.sort.reorder.bam
+	-I $outdir/temp2_$outprefix.$mapper.sort.reorder.bam
 	
 	# Realign
 	java -jar $gatk -T IndelRealigner \
