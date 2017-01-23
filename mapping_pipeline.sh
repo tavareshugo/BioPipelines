@@ -208,8 +208,6 @@ fi
 #
 # Realign around indels
 #
-echo "Realigning around indels"  1>&2
-
 if [[ $dups = "yes" ]]
 then
 	echo "Creating targets around Indels" 1>&2
@@ -229,7 +227,7 @@ then
 
 elif [[ $dups = "no" ]]
 then
-	echo "Creating targets around Indels" 1>&2
+	echo "Realigning around indels"  1>&2
 	java -jar $gatk -T RealignerTargetCreator \
 	-nt $threads -R $ref \
 	-o $outdir/${output}.intervals \
