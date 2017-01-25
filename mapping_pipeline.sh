@@ -194,14 +194,15 @@ then
 	MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=1000 \
 	CREATE_INDEX=true
 	
+	# Remove temporary file
+	if [[ $keep = "no" ]]
+	then
+	rm $outdir/temp2*.ba*;
+	fi
+	
 elif [[ $dups = "no" ]]
 then
 	echo "Skipping marking of duplicates"  1>&2
-fi
-
-if [[ $keep = "no" ]]
-then
-	rm $outdir/temp2*.ba*;
 fi
 
 
@@ -245,7 +246,7 @@ fi
 
 if [[ $keep = "no" ]]
 then
-	rm $outdir/temp3*.ba*
+	rm $outdir/temp*.ba*
 fi
 
 
