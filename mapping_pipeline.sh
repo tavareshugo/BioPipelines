@@ -252,6 +252,16 @@ fi
 
 ##### Collect statistics #####
 #
+# Validate BAM file
+#
+echo "Checking errors in bam file"
+
+java -jar $picard ValidateSamFile \
+INPUT=$outdir/${output}.bam \
+O=$outdir/stats/${output}.validate
+
+
+#
 # collect insert size distribution
 #
 echo "Getting insert size distribution" 1>&2
