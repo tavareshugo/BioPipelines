@@ -190,7 +190,7 @@ then
 	java -jar $picard MarkDuplicates \
 	INPUT=$outdir/temp2_$outprefix.$mapper.sort.reorder.bam \
 	OUTPUT=$outdir/temp3_$outprefix.$mapper.sort.reorder.markdup.bam \
-	METRICS_FILE=$outdir/stats/$outprefix.bwt2.reorder.markdup_metrics \
+	METRICS_FILE=$outdir/stats/$outprefix.$mapper.sort.reorder.markdup_metrics \
 	MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=1000 \
 	CREATE_INDEX=true
 	
