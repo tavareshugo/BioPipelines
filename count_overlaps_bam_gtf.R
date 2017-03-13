@@ -7,34 +7,41 @@ suppressMessages({
 #
 option_list = list(
   make_option(c("-b", "--bam"), type = "character", default = NULL, 
-              help = "Them alignment .bam file", metavar = "file"),
+              help = "The alignment .bam file", metavar = "file"),
   make_option(c("-o", "--out"), type="character", default = NULL, 
-              help = "output file name (the output format will be a CSV file). 
+              help = "Output file name (the output format will be a CSV file). 
               If not given, will output to the same directory as the input file 
-              with extension .cts.csv", 
+              with extension '.cts.csv'", 
               metavar = "file"),
   make_option("--gtf", type = "character", default = NULL,
               help = "The annotation file in gtf format. If you have a gff3 
-              file convert it to gtf first. For example, use cufflinks 'gffread'.",
+              file convert it to gtf first. For example, you can do this using 
+              the 'gffread' function from cufflinks, like so: 
+                gffread annotation.gff3 -T -o annotation.gtf",
               metavar = "character"),
   make_option("--mode", type = "character", default = "union",
               help = "The method for counting reads overlapping with the exons. 
-              One of: Union, IntersectionStrict, IntersectionNotEmpty. 
+              One of (case-sensitive): Union, IntersectionStrict, IntersectionNotEmpty. 
 
               See more details on Figure 1 of the GenomicAligments vignette: 
               https://bioconductor.org/packages/devel/bioc/vignettes/GenomicAlignments/inst/doc/summarizeOverlaps.pdf", 
-              metavar = "character")
+              metavar = "character"),
+  make_option("--single", action = "store_true", default = FALSE,
+              help = "Use this option if your library is single-end."),
+  make_option("--stranded", action = "store_true", default = FALSE,
+              help = "Use this option if your library is strand-specific."),
+  make_option("--fragments", action = "store_true", default = FALSE,
+              help = "Use this option if you want to count same-strand pairs, 
+              singletons, reads with unmapped pairs and other fragments. 
+              For more details see the 'fragments' option in the summarizeOverlaps 
+              function of the GenomicAlignments package.")
 )
 
 opt_parser = OptionParser(option_list=option_list,
                           description = "
 This script counts the number of reads overlapping the 
 exons from an annotation file. It uses the 'summariseOverlaps' 
-function from the Bioconductor package GenomicAlignments. It 
-assumes the following:
-  - paired-end reads
-  - non-strand specific
-  - only reads with a proper mate are considered")
+function from the Bioconductor package GenomicAlignments.")
 opt = parse_args(opt_parser)
 
 
@@ -113,9 +120,9 @@ cat("Counting reads...\n")
 counts <- summarizeOverlaps(features = exons, 
                             reads = bam_file,
                             mode = opt$mode,
-                            singleEnd = FALSE,
-                            ignore.strand = TRUE,
-                            fragments = FALSE)
+                            singleEnd = opt$single,
+                            ignore.strand = !opt$stranded,
+                            fragments = opt$fragments)
 
 
 #
