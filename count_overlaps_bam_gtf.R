@@ -19,7 +19,7 @@ option_list = list(
               the 'gffread' function from cufflinks, like so: 
                 gffread annotation.gff3 -T -o annotation.gtf",
               metavar = "character"),
-  make_option("--mode", type = "character", default = "union",
+  make_option("--mode", type = "character", default = "Union",
               help = "The method for counting reads overlapping with the exons. 
               One of (case-sensitive): Union, IntersectionStrict, IntersectionNotEmpty. 
 
