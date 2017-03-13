@@ -102,7 +102,7 @@ suppressMessages({
 })
 
 
-cat("Reading annotation file...\n")
+message("Reading annotation file...")
 # Read annotation file
 annotation <- makeTxDbFromGFF(opt$gtf, format = "gtf")
 
@@ -110,13 +110,13 @@ annotation <- makeTxDbFromGFF(opt$gtf, format = "gtf")
 exons <- exonsBy(annotation, by="gene")
 
 # Print some information
-cat("There are", summary(exons)[1], "genes in your annotation.\n")
+message("There are ", summary(exons)[1], " genes in your annotation.")
 
 # Create reference to BAM file
 bam_file <- BamFile(opt$bam)
 
 # Count reads
-cat("Counting reads...\n")
+message("Counting reads...")
 counts <- summarizeOverlaps(features = exons, 
                             reads = bam_file,
                             mode = opt$mode,
@@ -129,6 +129,7 @@ counts <- summarizeOverlaps(features = exons,
 # Prepare output table ----
 #
 suppressMessages(library(dplyr))
+message("Writing output to: ", opt$out)
 
 # Make a data frame with gene features
 exonsdf <- unlist(exons)
