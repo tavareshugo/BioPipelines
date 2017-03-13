@@ -110,7 +110,7 @@ annotation <- makeTxDbFromGFF(opt$gtf, format = "gtf")
 exons <- exonsBy(annotation, by="gene")
 
 # Print some information
-cat("There are", summary(exons)[1], "genes in your annotation.")
+cat("There are", summary(exons)[1], "genes in your annotation.\n")
 
 # Create reference to BAM file
 bam_file <- BamFile(opt$bam)
