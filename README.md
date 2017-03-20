@@ -36,13 +36,15 @@ Instructions of usage can be obtained by:
 
 An R script to count read alignments overlapping an annotation (GTF) file.
 
-It does so by using the 
-[GenomicAlignments](https://bioconductor.org/packages/release/bioc/html/GenomicAlignments.html), 
-[Rsamtools](https://bioconductor.org/packages/release/bioc/html/Rsamtools.html), 
-and [GenomicFeatures](https://bioconductor.org/packages/release/bioc/html/GenomicFeatures.html) 
-packages. 
+Instructions for usage can be obtained by:
+`Rscript count_overlaps_bam_gtf.R --help`
+
+The script depends on the following packages: 
+
+* [GenomicAlignments](https://bioconductor.org/packages/release/bioc/html/GenomicAlignments.html), 
+* [Rsamtools](https://bioconductor.org/packages/release/bioc/html/Rsamtools.html), 
+* [GenomicFeatures](https://bioconductor.org/packages/release/bioc/html/GenomicFeatures.html) 
+* [optparse](https://cran.r-project.org/web/packages/optparse/index.html) 
 
 The pipeline is based on [this BioConductor tutorial](https://www.bioconductor.org/help/workflows/rnaseqGene/).
 
-Instructions for usage can be obtained by:
-`Rscript --help`
