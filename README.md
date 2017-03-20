@@ -41,10 +41,10 @@ Instructions for usage can be obtained by:
 
 The script depends on the following packages: 
 
-* [GenomicAlignments](https://bioconductor.org/packages/release/bioc/html/GenomicAlignments.html), 
-* [Rsamtools](https://bioconductor.org/packages/release/bioc/html/Rsamtools.html), 
-* [GenomicFeatures](https://bioconductor.org/packages/release/bioc/html/GenomicFeatures.html) 
-* [optparse](https://cran.r-project.org/web/packages/optparse/index.html) 
+* [GenomicAlignments](https://bioconductor.org/packages/release/bioc/html/GenomicAlignments.html) 
+* [Rsamtools](https://bioconductor.org/packages/release/bioc/html/Rsamtools.html)
+* [GenomicFeatures](https://bioconductor.org/packages/release/bioc/html/GenomicFeatures.html)
+* [optparse](https://cran.r-project.org/web/packages/optparse/index.html)
 
 The pipeline is based on [this BioConductor tutorial](https://www.bioconductor.org/help/workflows/rnaseqGene/).
 
