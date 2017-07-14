@@ -8,7 +8,7 @@
 #
 # Picard tool - change this path if necessary
 #
-picard="java -jar ~/bin/picard.jar"
+picard="java -jar $HOME/bin/picard.jar"
 
 
 #
