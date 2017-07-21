@@ -35,10 +35,10 @@ option_list = list(
               singletons, reads with unmapped pairs and other fragments. 
               For more details see the 'fragments' option in the summarizeOverlaps 
               function of the GenomicAlignments package."),
-  make_option("--mapqFilter", type = "integer", default = 1,
+  make_option("--mapqFilter", type = "integer", default = 0,
               help = "A non-negative integer specifying the minimum mapping 
               quality or a read to retain for counting. Other reads will be 
-              discarded.")
+              discarded. Default value is 0 (all reads are counted).")
   )
 
 opt_parser = OptionParser(option_list=option_list,
@@ -94,6 +94,14 @@ if(is.null(opt$gtf)){
   stop("The annotation file has to be GTF format. Your file's extension is: ", 
        tools::file_ext(opt$gtf))
 }
+
+
+# Check that mapping quality is a positive integer
+if(!is.integer(opt$mapqFilter) | opt$mapqFilter < 0){
+  stop("--mapqFilter needs to be a positive integer.")
+}
+
+
 
 
 #
