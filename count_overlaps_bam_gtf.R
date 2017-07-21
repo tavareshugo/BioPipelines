@@ -17,12 +17,12 @@ option_list = list(
               help = "The annotation file in gtf format. If you have a gff3 
               file convert it to gtf first. For example, you can do this using 
               the 'gffread' function from cufflinks, like so: 
-                gffread annotation.gff3 -T -o annotation.gtf",
+              gffread annotation.gff3 -T -o annotation.gtf",
               metavar = "character"),
   make_option("--mode", type = "character", default = "Union",
               help = "The method for counting reads overlapping with the exons. 
               One of (case-sensitive): Union, IntersectionStrict, IntersectionNotEmpty. 
-
+              
               See more details on Figure 1 of the GenomicAligments vignette: 
               https://bioconductor.org/packages/devel/bioc/vignettes/GenomicAlignments/inst/doc/summarizeOverlaps.pdf", 
               metavar = "character"),
@@ -34,14 +34,18 @@ option_list = list(
               help = "Use this option if you want to count same-strand pairs, 
               singletons, reads with unmapped pairs and other fragments. 
               For more details see the 'fragments' option in the summarizeOverlaps 
-              function of the GenomicAlignments package.")
-)
+              function of the GenomicAlignments package."),
+  make_option("--mapqFilter", type = "integer", default = 0,
+              help = "A non-negative integer specifying the minimum mapping 
+              quality or a read to retain for counting. Other reads will be 
+              discarded. Default value is 0 (all reads are counted).")
+  )
 
 opt_parser = OptionParser(option_list=option_list,
                           description = "
-This script counts the number of reads overlapping the 
-exons from an annotation file. It uses the 'summariseOverlaps' 
-function from the Bioconductor package GenomicAlignments.")
+                          This script counts the number of reads overlapping the 
+                          exons from an annotation file. It uses the 'summariseOverlaps' 
+                          function from the Bioconductor package GenomicAlignments.")
 opt = parse_args(opt_parser)
 
 
@@ -92,6 +96,14 @@ if(is.null(opt$gtf)){
 }
 
 
+# Check that mapping quality is a positive integer
+if(!is.integer(opt$mapqFilter) | opt$mapqFilter < 0){
+  stop("--mapqFilter needs to be a positive integer.")
+}
+
+
+
+
 #
 # Read counts ----
 #
@@ -122,7 +134,8 @@ counts <- summarizeOverlaps(features = exons,
                             mode = opt$mode,
                             singleEnd = opt$single,
                             ignore.strand = !opt$stranded,
-                            fragments = opt$fragments)
+                            fragments = opt$fragments,
+                            param = ScanBamParam(mapqFilter = opt$mapqFilter))
 
 
 #
