@@ -1,7 +1,7 @@
 suppressMessages({
   library(optparse)
 })
-
+ 
 #
 # Define options ----
 #
@@ -51,8 +51,12 @@ opt = parse_args(opt_parser)
 
 # # For testing purposes
 # opt <- list(bam = "~/mount/hpc_slcu/temp/test_rnaseqcount/test_alignment.bam",
-#             gtf = "~/mount/hpc_slcu/reference/arabidopsis/tair10/annotation/Arabidopsis_thaliana.TAIR10.34.gtf",
-#             mode = "Union")
+#             gtf = "~/mount/hpc_slcu/reference/arabidopsis/tair10/ensembl_release-37/annotation/Arabidopsis_thaliana.TAIR10.37.gtf",
+#             mode = "Union",
+#             single = FALSE,
+#             stranded = TRUE,
+#             fragments = FALSE,
+#             mapqFilter = 0)
 
 #
 # Check options ----
@@ -144,37 +148,41 @@ counts <- summarizeOverlaps(features = exons,
 suppressMessages(library(dplyr))
 message("Writing output to: ", opt$out)
 
+# Reduce the exons, to merge overlapping exons
+exons_reduced <- reduce(exons)
+
 # Make a data frame with gene features
-exonsdf <- unlist(exons)
-exonsdf <- data.frame(seqnames = seqnames(exonsdf),
-                      start = start(exonsdf)-1,
-                      end = end(exonsdf),
-                      gene_id = names(exonsdf))
+exonsdf <- unlist(exons_reduced)
+exonsdf <- data.frame(chrom = seqnames(exonsdf),
+                      exon_start = start(exonsdf),
+                      exon_end = end(exonsdf),
+                      gene = names(exonsdf))
 
 # Summarise by gene (with start and end positions)
 genesdf <- exonsdf %>% 
-  group_by(gene_id, seqnames) %>%
-  summarise(gene_start = min(c(start, end)),
-            gene_end = max(c(start, end)),
-            gene_length = (gene_end - gene_start + 1)/1000)
+  mutate(exon_length = exon_end - exon_start + 1) %>% 
+  group_by(gene, chrom) %>%
+  summarise(start = min(c(exon_start, exon_end)),
+            end = max(c(exon_start, exon_end)),
+            full_length_kb = (end - start + 1)/1000,
+            effective_length_kb = sum(exon_length)/1000) %>% 
+  ungroup()
 
 
 # Make a data.frame of read counts
-countsdf <- data.frame(gene_id = rownames(counts),
+countsdf <- data.frame(gene = rownames(counts),
                        counts = as.integer(assay(counts)))
 
 # Join with the gene table
-countsdf <- left_join(countsdf, genesdf, by = "gene_id")
+countsdf <- left_join(countsdf, genesdf, by = "gene")
 
 # Calculate FPKM and TPM
 countsdf <- countsdf %>% 
   mutate(rpm = counts/(sum(counts)/1e6),
-         fpkm = rpm/gene_length,
-         rpk = counts/gene_length,
+         fpkm = rpm/effective_length_kb,
+         rpk = counts/effective_length_kb,
          tpm = rpk/(sum(rpk)/1e6)) %>% 
   select(-rpm, -rpk)
 
 # Write output
 write.csv(countsdf, opt$out, row.names = FALSE)
-
-
