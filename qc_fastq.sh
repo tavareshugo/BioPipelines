@@ -46,7 +46,7 @@ and Indexed adapters). The script uses GNU parallel to parallelize the
 filtering across multiple cores, so please make sure you have it 
 installed.
 
-As an input the script takes a list of read file name's prefixes. 
+As an input the script takes a list of read file name\'s prefixes. 
 For example, if there were paired-end reads from two samples, located in:
 ./read_directory/sample1_r1.fq.gz
 ./read_directory/sample1_r2.fq.gz
@@ -59,13 +59,13 @@ file name prefixes:
 ./read_directory/sample2
 
 The suffix corresponding to read1 and read2 in this example would be 
-'_r1.fq.gz' and '_r2.fq.gz', respectively.
+"_r1.fq.gz" and "_r2.fq.gz", respectively.
 
 Therefore, the command would be:
 $0 -p fastq_list.txt -1 _r1.fq.gz -2 _r2.fq.gz -o ./output_dir/
 
-The script will create two output directories named 'fastqc' and 
-'filtered_reads'. The first contains the FastQC reports for raw and
+The script will create two output directories named "fastqc" and 
+"filtered_reads". The first contains the FastQC reports for raw and
 filtered reads. The second contains the filtered reads, the log files 
 from filtering software and two .csv files with information compiled 
 from the log files (useful for plotting).
@@ -131,7 +131,13 @@ done < "$file_list"
 # FastQC on raw files
 #
 printf "Starting FastQC on raw files\n"
+
+# Run fastqc on all reads
 fastqc -t $threads -o $outdir/fastqc/raw/ $in1 $in2
+
+# Compile fastqc reports with multiqc
+multiqc --outdir ${outdir}/fastqc/ --filename fastqc_reports_raw.html ${outdir}/fastqc/raw/
+
 printf "Finished FastQC on raw files\n"
 
 
@@ -153,15 +159,23 @@ $options \
 {5} \
 ::: $out1 ::: $out2 ::: $in1 ::: $in2 ::: $out_log
 
-printf "Finished cutadapt"
+# Compile cutadapt statistics
+multiqc --outdir ${outdir}/filtered_reads --filename cutadapt_reports.html ${outdir}/filtered_reads
 
+printf "Finished cutadapt"
 
 
 #
 # FastQC on filtered files
 #
 printf "Starting FastQC on filtered files\n"
+
+# Run fastqc on all filtered reads
 fastqc -t $threads -o $outdir/fastqc/filtered $out1 $out2
+
+# Compile fastqc reports with multiqc
+multiqc --outdir ${outdir}/fastqc/ --filename fastqc_reports_filtered.html ${outdir}/fastqc/filtered/
+
 printf "Finished FastQC on filtered files\n"
 
 
@@ -198,4 +212,3 @@ do
 	sed 's/ : \+/,/g' | \
 	sed "s/^/$name,/" >> $outdir/filtered_reads/cutadapt_basepair_stats.csv
 done
-
