@@ -294,7 +294,11 @@ java -jar $gatk -T CallableLoci \
 --format BED \
 --minDepth 10 &
 
+
+#
+# Bedtools coverage
+#
+bedtools genomecov -ibam $outdir/${output}.bam > $outdir/stats/${output}.genomecov &
+
+
 wait
-
-
-
