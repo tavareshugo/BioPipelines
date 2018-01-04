@@ -120,11 +120,10 @@ while read f
 do
 	in1="$in1 ${f}${r1_suf}"
 	in2="$in2 ${f}${r2_suf}"
-	out_log="$out_log ${outdir}/filtered_reads/${f##*/}.filtered.log"
-	out1="$out1 ${outdir}/filtered_reads/${f##*/}.filtered.${r1_suf/#./}"
-	out2="$out2 ${outdir}/filtered_reads/${f##*/}.filtered.${r2_suf/#./}"
+	out_log="$out_log ${outdir}/filtered_reads/${f##*/}_filtered.log"
+	out1="$out1 ${outdir}/filtered_reads/${f##*/}_filtered${r1_suf/#./}"
+	out2="$out2 ${outdir}/filtered_reads/${f##*/}_filtered${r2_suf/#./}"
 done < "$file_list"
-
 
 
 #
