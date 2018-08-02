@@ -173,7 +173,8 @@ OUTPUT=$outdir/temp2_$outprefix.$mapper.sort.reorder.bam \
 REFERENCE=$ref \
 QUIET=true \
 VERBOSITY=ERROR \
-CREATE_INDEX=true;
+CREATE_INDEX=true \
+TMP_DIR=$outdir;
 
 if [[ $keep = "no" ]]
 then
@@ -192,7 +193,8 @@ then
 	OUTPUT=$outdir/temp3_$outprefix.$mapper.sort.reorder.markdup.bam \
 	METRICS_FILE=$outdir/stats/$outprefix.$mapper.sort.reorder.markdup_metrics \
 	MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=1000 \
-	CREATE_INDEX=true
+	CREATE_INDEX=true \
+  TMP_DIR=$outdir
 	
 	# Remove temporary file
 	if [[ $keep = "no" ]]
@@ -258,7 +260,8 @@ echo "Checking errors in bam file"
 
 java -jar $picard ValidateSamFile \
 INPUT=$outdir/${output}.bam \
-O=$outdir/stats/${output}.validate
+O=$outdir/stats/${output}.validate \
+TMP_DIR=$outdir
 
 
 #
@@ -270,7 +273,8 @@ java -jar $picard CollectInsertSizeMetrics \
 INPUT=$outdir/${output}.bam \
 OUTPUT=$outdir/stats/${output}.insert_size.hist \
 HISTOGRAM_FILE=$outdir/stats/${output}.insert_size.pdf \
-REFERENCE_SEQUENCE=$ref &
+REFERENCE_SEQUENCE=$ref \
+TMP_DIR=$outdir &
 
 
 #
@@ -294,7 +298,11 @@ java -jar $gatk -T CallableLoci \
 --format BED \
 --minDepth 10 &
 
+
+#
+# Bedtools coverage
+#
+bedtools genomecov -ibam $outdir/${output}.bam > $outdir/stats/${output}.genomecov &
+
+
 wait
-
-
-
