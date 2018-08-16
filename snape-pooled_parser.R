@@ -86,7 +86,7 @@ if(is.null(opt$snp_list)){
 #
 # Read SNP file ----
 #
-message("Reading snape-pooled file...")
+message("Reading snape-pooled file: ", opt$snape)
 
 snape <- fread(opt$snape,
                col.names = c("chrom", "pos", "ref_allele", "ref_count", "alt_count", 
@@ -94,7 +94,9 @@ snape <- fread(opt$snape,
                              "prob_fixed", "alt_freq"),
                colClasses = c("character", "integer", "character", "integer", "integer",
                               "integer", "integer", "character", "numeric", "numeric", "numeric"),
-               na.strings = "*")
+               na.strings = "*",
+               showProgress = FALSE,
+               integer64 = "numeric")
 
 
 
@@ -106,7 +108,7 @@ message("Subsetting SNPs...")
 # Subset SNPs
 if(!is.null(opt$snp_list)){  # If SNP list is provided
   # Read SNP list
-  snp_list <- fread(opt$snp_list)
+  snp_list <- fread(opt$snp_list, showProgress = FALSE)
   
   # Get SNP ID
   snp_subset <- paste(snp_list[[1]], snp_list[[2]], sep = "_")
@@ -133,5 +135,5 @@ if(!is.null(opt$snp_list)){  # If SNP list is provided
 }
 
 # Write output
-message("Writting output file...")
+message("Writting output file: ", opt$out)
 write.csv(snape, file = opt$out, row.names = FALSE)
